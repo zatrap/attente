@@ -2,140 +2,127 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Gestion file d’attente Premium</title>
+<title>Gestion file d’attente - Version Premium</title>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<style>
+html, body { margin:0; padding:0; height:100%; font-family:'Segoe UI', sans-serif; }
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAnaaDFSoR4TQeBT-GsePWh4NZ837zptcI",
-  authDomain: "attente-a4b23.firebaseapp.com",
-  projectId: "attente-a4b23",
-  storageBucket: "attente-a4b23.firebasestorage.app",
-  messagingSenderId: "305708504065",
-  appId: "1:305708504065:web:10979176a13a4fb3829c00",
-  measurementId: "G-QG0FXPWTG2"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-let current = 0;
-let history = [];
-let absents = [];
-let lastCalls = [];
-let soundEnabled = true;
-
-function speakNumber(number, source){
-  if(!soundEnabled) return;
-  const msg=new SpeechSynthesisUtterance(
-    `Numéro ${number}, veuillez vous présenter au ${source}`
-  );
-  msg.lang="fr-FR";
-  speechSynthesis.speak(msg);
+body.control-mode { 
+  background: linear-gradient(to bottom, #e0f0ff, #ffffff); 
+  padding:20px; 
 }
 
-async function saveToFirebase(number, source, status="servi"){
-  lastCalls.unshift({number, source});
-  if(lastCalls.length>4) lastCalls.pop();
-
-  await setDoc(doc(db,"queue","current"),{
-    number,
-    source,
-    status,
-    lastCalls
-  });
+.container { 
+  max-width:950px; 
+  margin:auto; 
+  background:#ffffffee; 
+  padding:30px; 
+  border-radius:15px; 
+  box-shadow:0 10px 30px rgba(0,0,0,0.2);
 }
 
-window.next = async function(){
-  current++;
-  history.push({number:current,status:"servi",source:"Comptoir"});
-  await saveToFirebase(current,"Comptoir");
-  speakNumber(current,"Comptoir");
+button { 
+  padding:10px 18px; 
+  margin:5px; 
+  border:none; 
+  border-radius:8px; 
+  background:#007aff; 
+  color:white; 
+  cursor:pointer;
+  transition:0.2s;
 }
+button:hover { transform:scale(1.05); background:#005ecb;}
 
-window.markAbsent = async function(){
-  if(history.length===0) return;
-  const last=history[history.length-1];
-  last.status="absent";
-  absents.push(last.number);
-  await saveToFirebase(last.number,last.source,"absent");
-}
+.absentBtn{ background:#ff4d4d; }
+.absentBtn:hover{ background:#cc0000; }
 
-window.manual = async function(){
-  const n=parseInt(document.getElementById("manualNumber").value);
-  if(!n) return alert("Numéro invalide");
+.recallBtn{ background:#ffaa00; }
+.recallBtn:hover{ background:#cc8400; }
 
-  const source=document.getElementById("manualSource").value;
-  const type=document.getElementById("manualType").value;
-  const label= type?`${source} - ${type}`:source;
-
-  current=n;
-  history.push({number:n,status:"manuel",source:label});
-  await saveToFirebase(n,label);
-  speakNumber(n,label);
-
-  document.getElementById("manualNumber").value="";
-}
-
-window.toggleSound = function(){
-  soundEnabled=!soundEnabled;
-  document.getElementById("soundBtn").textContent=
-    soundEnabled?"🔊 Son activé":"🔇 Son désactivé";
-}
-
-window.openPublic = function(){
-  window.open(location.href+"?public=1","_blank");
+input[type=number], select{
+  padding:10px;
+  border-radius:8px;
+  border:2px solid #007aff;
+  margin:5px;
 }
 
 /* ================= PUBLIC ================= */
-
-if(location.search.includes("public=1")){
-  document.body.innerHTML=`
-  <div style="background:black;color:white;height:100vh;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;">
-    <h1>NUMÉRO EN COURS</h1>
-    <div id="publicNumber" style="font-size:150px;">0</div>
-    <div id="status" style="font-size:40px;"></div>
-    <div id="lastCalls" style="margin-top:40px;"></div>
-  </div>
-  `;
-
-  onSnapshot(doc(db,"queue","current"),(docSnap)=>{
-    if(docSnap.exists()){
-      const data=docSnap.data();
-      document.getElementById("publicNumber").textContent=data.number;
-
-      if(data.status==="absent"){
-        document.getElementById("status").textContent="ABSENT";
-        document.getElementById("status").style.color="gray";
-      }else{
-        document.getElementById("status").textContent=data.source;
-        document.getElementById("status").style.color="white";
-      }
-
-      document.getElementById("lastCalls").innerHTML=
-        data.lastCalls.map(c=>
-          `<div>#${c.number} → ${c.source}</div>`
-        ).join("");
-    }
-  });
+body.public-mode{
+  background: linear-gradient(180deg, #00111f, #000000);
+  overflow:hidden;
+  color:white;
 }
-</script>
+
+#pub{
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  align-items:center;
+  padding:40px 20px;
+  box-sizing:border-box;
+}
+
+#title{ font-size:3vw; opacity:0.8; }
+
+#centerZone{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+
+#publicNumber{
+  font-size:18vw;
+  text-shadow:0 0 40px cyan;
+  transition:0.3s;
+}
+
+#status{
+  font-size:4vw;
+  margin-top:10px;
+}
+
+#lastCalls{
+  display:flex;
+  gap:25px;
+  flex-wrap:wrap;
+  justify-content:center;
+  font-size:1.8vw;
+}
+
+.callItem{
+  background:rgba(255,255,255,0.07);
+  padding:10px 20px;
+  border-radius:10px;
+  min-width:220px;
+}
+
+#fullscreenBtn {
+  position:absolute;
+  bottom:10px;
+  right:10px;
+  opacity:0.3;
+}
+</style>
 </head>
 
-<body>
+<body class="control-mode">
 
-<h1>🎯 Gestion file d’attente Premium</h1>
+<div class="container">
+<h1 style="text-align:center;">🎯 Gestion file d’attente Premium</h1>
 
-<button onclick="next()">Suivant</button>
-<button onclick="markAbsent()">Absent</button>
+<div id="bureauContainer"></div>
+
+<div style="text-align:center;margin-top:20px;">
+<button onclick="next()">Suivant (Comptoir)</button>
+<button class="absentBtn" onclick="markAbsent()">Absent</button>
 <button onclick="openPublic()">Écran public</button>
 <button onclick="toggleSound()" id="soundBtn">🔊 Son activé</button>
+</div>
 
-<br><br>
-
+<div style="text-align:center;margin-top:20px;">
 <select id="manualSource">
 <option value="Comptoir">Comptoir</option>
 <option value="Bureau 1">Bureau 1</option>
@@ -152,6 +139,162 @@ if(location.search.includes("public=1")){
 
 <input type="number" id="manualNumber" placeholder="Numéro">
 <button onclick="manual()">Appeler</button>
+</div>
 
+<h3>Numéros absents</h3>
+<div id="absentList"></div>
+
+<h3>Historique (10 derniers)</h3>
+<div id="history"></div>
+
+</div>
+
+<!-- ================= FIREBASE ================= -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// 🔹 Ta config Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyAnaaDFSoR4TQeBT-GsePWh4NZ837zptcI",
+  authDomain: "attente-a4b23.firebaseapp.com",
+  projectId: "attente-a4b23",
+  storageBucket: "attente-a4b23.firebasestorage.app",
+  messagingSenderId: "305708504065",
+  appId: "1:305708504065:web:10979176a13a4fb3829c00",
+  measurementId: "G-QG0FXPWTG2"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ================= LOGIQUE DE LA FILE =================
+const bureauNames = {1:"Bureau 1",2:"Bureau 2",3:"Bureau 3",4:"Sous-sol"};
+let current=0, history=[], absents=[], lastCalls=[], soundEnabled=true;
+
+function initBureaux(){
+  const container=document.getElementById("bureauContainer");
+  container.innerHTML="";
+  for(let i=1;i<=4;i++){
+    const div=document.createElement("div");
+    div.innerHTML=`<strong>${bureauNames[i]}</strong> 
+<button onclick="callBureau(${i})">Appeler</button>`;
+    container.appendChild(div);
+  }
+}
+
+function speakNumber(number, source){
+  if(!soundEnabled) return;
+  const msg=new SpeechSynthesisUtterance(`Numéro ${number}, veuillez vous présenter au ${source}`);
+  msg.lang="fr-FR";
+  speechSynthesis.speak(msg);
+}
+
+async function broadcastFirebase(number, source, status="servi"){
+  lastCalls.unshift({number, source});
+  if(lastCalls.length>4) lastCalls.pop();
+  await setDoc(doc(db,"queue","current"), {number, source, status, lastCalls});
+}
+
+// ================= ACTIONS =================
+window.next = async function(){
+  current++;
+  history.push({number:current,status:"servi",source:"Comptoir"});
+  await broadcastFirebase(current,"Comptoir");
+  speakNumber(current,"Comptoir");
+  updateHistory();
+}
+
+window.markAbsent = async function(){
+  if(history.length===0) return;
+  const last=history[history.length-1];
+  last.status="absent";
+  absents.push(last.number);
+  await broadcastFirebase(last.number,last.source,"absent");
+  updateHistory();
+}
+
+window.manual = async function(){
+  const n=parseInt(document.getElementById("manualNumber").value);
+  if(!n) return alert("Numéro invalide");
+  const source=document.getElementById("manualSource").value;
+  const type=document.getElementById("manualType").value;
+  const label= type?`${source} - ${type}`:source;
+  current=n;
+  history.push({number:n,status:"manuel",source:label});
+  await broadcastFirebase(n,label);
+  speakNumber(n,label);
+  document.getElementById("manualNumber").value="";
+  updateHistory();
+}
+
+window.callBureau = async function(id){
+  current++;
+  const source=bureauNames[id];
+  history.push({number:current,status:"servi",source});
+  await broadcastFirebase(current,source);
+  speakNumber(current,source);
+  updateHistory();
+}
+
+window.toggleSound = function(){
+  soundEnabled=!soundEnabled;
+  document.getElementById("soundBtn").textContent = soundEnabled?"🔊 Son activé":"🔇 Son désactivé";
+}
+
+window.openPublic = function(){
+  window.open(location.href+"?public=1","_blank");
+}
+
+// ================= PUBLIC =================
+if(location.search.includes("public=1")){
+  document.body.className="public-mode";
+  document.body.innerHTML=`
+  <div id="pub">
+    <div id="title">NUMÉRO EN COURS</div>
+    <div id="centerZone">
+        <div id="publicNumber">0</div>
+        <div id="status"></div>
+    </div>
+    <div id="lastCalls"></div>
+    <button id="fullscreenBtn" onclick="document.documentElement.requestFullscreen()">Plein écran</button>
+  </div>`;
+
+  onSnapshot(doc(db,"queue","current"),(docSnap)=>{
+    if(docSnap.exists()){
+      const data=docSnap.data();
+      document.getElementById("publicNumber").textContent=data.number;
+      if(data.status==="absent"){
+        document.getElementById("status").textContent="ABSENT";
+        document.getElementById("status").style.color="gray";
+      }else{
+        document.getElementById("status").textContent=data.source;
+        document.getElementById("status").style.color="white";
+      }
+      document.getElementById("lastCalls").innerHTML=
+        data.lastCalls.map(c=>`<div class="callItem">#${c.number} → ${c.source}</div>`).join("");
+    }
+  });
+}
+
+function updateHistory(){
+  document.getElementById("history").innerHTML=
+    history.slice(-10).reverse().map(h=>`<div>#${h.number} - ${h.status} (${h.source})</div>`).join("");
+  document.getElementById("absentList").innerHTML=
+    absents.map(n=>`<button class="recallBtn" onclick="recall(${n})">Rappeler #${n}</button>`).join("");
+}
+
+window.recall = async function(n){
+  absents=absents.filter(x=>x!==n);
+  history.push({number:n,status:"rappel",source:"Comptoir"});
+  await broadcastFirebase(n,"Comptoir");
+  speakNumber(n,"Comptoir");
+  updateHistory();
+}
+
+// ================= INITIALISATION =================
+initBureaux();
+updateHistory();
+</script>
 </body>
 </html>
