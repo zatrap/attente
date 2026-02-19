@@ -315,18 +315,20 @@ if(location.search.includes("public=1")){
     const m = String(now.getMinutes()).padStart(2,'0');
     const s = String(now.getSeconds()).padStart(2,'0');
     document.getElementById('time').textContent = `${h}:${m}:${s}`;
-
     const options = {weekday:'long', day:'numeric', month:'long', year:'numeric'};
     document.getElementById('day').textContent = now.toLocaleDateString('fr-FR', options);
   }
   updateTime();
   setInterval(updateTime,1000);
 
-  // 🔹 QR code pour le lien public
-  import('https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js').then(QRCode => {
+  // 🔹 QR code pour le lien public (utilisation simple)
+  const script = document.createElement('script');
+  script.src = "https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js";
+  script.onload = () => {
     const canvas = document.getElementById('qrCode');
     QRCode.toCanvas(canvas, window.location.href, {width:120});
-  });
+  };
+  document.body.appendChild(script);
 }
 
 function updateHistory(){
