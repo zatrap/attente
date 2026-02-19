@@ -7,7 +7,6 @@
 <style>
 html, body { margin:0; padding:0; height:100%; font-family:'Segoe UI', sans-serif; }
 
-/* ================= CONTROL MODE ================= */
 body.control-mode { 
   background: linear-gradient(to bottom, #e0f0ff, #ffffff); 
   padding:20px; 
@@ -185,10 +184,7 @@ import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/f
 const firebaseConfig = {
   apiKey: "AIzaSyAnaaDFSoR4TQeBT-GsePWh4NZ837zptcI",
   authDomain: "attente-a4b23.firebaseapp.com",
-  projectId: "attente-a4b23",
-  storageBucket: "attente-a4b23.firebasestorage.app",
-  messagingSenderId: "305708504065",
-  appId: "1:305708504065:web:10979176a13a4fb3829c00"
+  projectId: "attente-a4b23"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -198,7 +194,7 @@ const bureauNames = {1:"Bureau 1",2:"Bureau 2",3:"Bureau 3",4:"Sous-sol"};
 
 let current=0, history=[], absents=[], lastCalls=[], soundEnabled=true;
 
-/* ===== INIT BUREAUX ===== */
+/* ===== INIT ===== */
 function initBureaux(){
   const container=document.getElementById("bureauContainer");
   container.innerHTML="";
@@ -229,8 +225,22 @@ async function broadcastFirebase(number, source, status="servi"){
 window.next = async function(){
   current++;
   history.push({number:current,status:"servi",source:"Comptoir"});
-  await broadcastFirebase(current,"Comptoir");
+  await broadcastFirebase(current,"Comptoir","servi");
   speakNumber(current,"Comptoir");
+  updateHistory();
+}
+
+window.markAbsent = async function(){
+  if(history.length===0) return;
+
+  const last = history[history.length-1];
+  last.status="absent";
+
+  if(!absents.includes(last.number)){
+    absents.push(last.number);
+  }
+
+  await broadcastFirebase(last.number,last.source,"absent");
   updateHistory();
 }
 
@@ -238,7 +248,7 @@ window.callBureau = async function(id){
   current++;
   const source=bureauNames[id];
   history.push({number:current,status:"servi",source});
-  await broadcastFirebase(current,source);
+  await broadcastFirebase(current,source,"servi");
   speakNumber(current,source);
   updateHistory();
 }
@@ -246,30 +256,25 @@ window.callBureau = async function(id){
 window.manual = async function(){
   const n=parseInt(document.getElementById("manualNumber").value);
   if(!n) return alert("Numéro invalide");
+
   const source=document.getElementById("manualSource").value;
   const type=document.getElementById("manualType").value;
   const label= type?`${source} - ${type}`:source;
+
   current=n;
   history.push({number:n,status:"manuel",source:label});
-  await broadcastFirebase(n,label);
-  speakNumber(n,label);
-  document.getElementById("manualNumber").value="";
-  updateHistory();
-}
 
-window.markAbsent = async function(){
-  if(history.length===0) return;
-  const last=history[history.length-1];
-  last.status="absent";
-  absents.push(last.number);
-  await broadcastFirebase(last.number,last.source,"absent");
+  await broadcastFirebase(n,label,"servi");
+  speakNumber(n,label);
+
+  document.getElementById("manualNumber").value="";
   updateHistory();
 }
 
 window.recall = async function(n){
   absents=absents.filter(x=>x!==n);
   history.push({number:n,status:"rappel",source:"Comptoir"});
-  await broadcastFirebase(n,"Comptoir");
+  await broadcastFirebase(n,"Comptoir","servi");
   speakNumber(n,"Comptoir");
   updateHistory();
 }
@@ -284,7 +289,7 @@ window.openPublic = function(){
   window.open(location.origin + location.pathname + "?public=1","_blank");
 }
 
-/* ===== PUBLIC SCREEN ===== */
+/* ===== PUBLIC ===== */
 if(location.search.includes("public=1")){
   document.body.className="public-mode";
   document.body.innerHTML=`
@@ -316,13 +321,19 @@ if(location.search.includes("public=1")){
     if(docSnap.exists()){
       const data=docSnap.data();
       document.getElementById("publicNumber").textContent=data.number;
-      document.getElementById("status").textContent=data.source;
+
+      if(data.status==="absent"){
+        document.getElementById("status").textContent="ABSENT";
+        document.getElementById("status").style.color="red";
+      }else{
+        document.getElementById("status").textContent=data.source;
+        document.getElementById("status").style.color="white";
+      }
 
       document.getElementById("lastCalls").innerHTML=
         data.lastCalls.map(c=>`<div class="callItem">#${c.number} → ${c.source}</div>`).join("");
 
       const publicUrl = location.origin + location.pathname + "?public=1";
-
       document.getElementById("qrCode").src =
         "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="
         + encodeURIComponent(publicUrl);
