@@ -10,7 +10,6 @@ html, body { margin:0; padding:0; height:100%; font-family:'Segoe UI', sans-seri
 body.control-mode { 
   background: linear-gradient(to bottom, #e0f0ff, #ffffff); 
   padding:20px; 
-  position:relative;
 }
  
 .container { 
@@ -52,7 +51,6 @@ body.public-mode{
   background: linear-gradient(180deg, #00111f, #000000);
   overflow:hidden;
   color:white;
-  font-family:'Segoe UI', sans-serif;
 }
  
 #pub{
@@ -63,25 +61,6 @@ body.public-mode{
   align-items:center;
   padding:40px 20px;
   box-sizing:border-box;
-  position:relative;
-}
- 
-#dateTime{
-  position:absolute;
-  top:20px;
-  right:30px;
-  text-align:right;
-  line-height:1.2;
-}
- 
-#time{
-  font-size:3vw;
-  font-weight:bold;
-}
- 
-#day{
-  font-size:1.5vw;
-  opacity:0.7;
 }
  
 #title{ font-size:3vw; opacity:0.8; }
@@ -125,14 +104,6 @@ body.public-mode{
   bottom:10px;
   right:10px;
   opacity:0.3;
-}
- 
-#qrCode{
-  position:absolute;
-  bottom:20px;
-  left:20px;
-  width:120px;
-  height:120px;
 }
 </style>
 </head>
@@ -178,12 +149,12 @@ body.public-mode{
  
 </div>
  
-<!-- ================= FIREBASE + QR ================= -->
+<!-- ================= FIREBASE ================= -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
  
-// 🔹 Config Firebase
+// 🔹 Ta config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAnaaDFSoR4TQeBT-GsePWh4NZ837zptcI",
   authDomain: "attente-a4b23.firebaseapp.com",
@@ -280,18 +251,15 @@ if(location.search.includes("public=1")){
   document.body.className="public-mode";
   document.body.innerHTML=`
 <div id="pub">
-<div id="dateTime"><div id="time"></div><div id="day"></div></div>
 <div id="title">NUMÉRO EN COURS</div>
 <div id="centerZone">
 <div id="publicNumber">0</div>
 <div id="status"></div>
 </div>
 <div id="lastCalls"></div>
-<canvas id="qrCode"></canvas>
 <button id="fullscreenBtn" onclick="document.documentElement.requestFullscreen()">Plein écran</button>
 </div>`;
  
-  // 🔹 Firestore realtime
   onSnapshot(doc(db,"queue","current"),(docSnap)=>{
     if(docSnap.exists()){
       const data=docSnap.data();
@@ -307,28 +275,6 @@ if(location.search.includes("public=1")){
         data.lastCalls.map(c=>`<div class="callItem">#${c.number} → ${c.source}</div>`).join("");
     }
   });
- 
-  // 🔹 Heure + Date
-  function updateTime(){
-    const now = new Date();
-    const h = String(now.getHours()).padStart(2,'0');
-    const m = String(now.getMinutes()).padStart(2,'0');
-    const s = String(now.getSeconds()).padStart(2,'0');
-    document.getElementById('time').textContent = `${h}:${m}:${s}`;
-    const options = {weekday:'long', day:'numeric', month:'long', year:'numeric'};
-    document.getElementById('day').textContent = now.toLocaleDateString('fr-FR', options);
-  }
-  updateTime();
-  setInterval(updateTime,1000);
- 
-  // 🔹 QR code pour le lien public (utilisation simple)
-  const script = document.createElement('script');
-  script.src = "https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js";
-  script.onload = () => {
-    const canvas = document.getElementById('qrCode');
-    QRCode.toCanvas(canvas, window.location.href, {width:120});
-  };
-  document.body.appendChild(script);
 }
  
 function updateHistory(){
