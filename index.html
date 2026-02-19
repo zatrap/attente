@@ -70,7 +70,17 @@ body.public-mode{
   position:absolute;
   top:20px;
   right:30px;
-  font-size:2vw;
+  text-align:right;
+  line-height:1.2;
+}
+
+#time{
+  font-size:3vw;
+  font-weight:bold;
+}
+
+#day{
+  font-size:1.5vw;
   opacity:0.7;
 }
 
@@ -270,7 +280,7 @@ if(location.search.includes("public=1")){
   document.body.className="public-mode";
   document.body.innerHTML=`
   <div id="pub">
-    <div id="dateTime"></div>
+    <div id="dateTime"><div id="time"></div><div id="day"></div></div>
     <div id="title">NUMÉRO EN COURS</div>
     <div id="centerZone">
         <div id="publicNumber">0</div>
@@ -298,13 +308,19 @@ if(location.search.includes("public=1")){
     }
   });
 
-  // 🔹 Affichage date/heure
-  function updateDateTime(){
-    const options = {weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'};
-    document.getElementById("dateTime").textContent = new Date().toLocaleDateString('fr-FR', options);
+  // 🔹 Heure + Date
+  function updateTime(){
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('time').textContent = `${h}:${m}:${s}`;
+
+    const options = {weekday:'long', day:'numeric', month:'long', year:'numeric'};
+    document.getElementById('day').textContent = now.toLocaleDateString('fr-FR', options);
   }
-  updateDateTime();
-  setInterval(updateDateTime, 60000);
+  updateTime();
+  setInterval(updateTime,1000);
 
   // 🔹 QR code pour le lien public
   import('https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js').then(QRCode => {
