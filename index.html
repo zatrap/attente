@@ -106,6 +106,7 @@ body.public-mode{
   opacity:0.3;
 }
 
+/* ===== DATE ===== */
 #datetime{
   position:absolute;
   top:20px;
@@ -119,6 +120,7 @@ body.public-mode{
   opacity:0.7;
 }
 
+/* ===== QR CODE GAUCHE ===== */
 #qrZone{
   position:absolute;
   left:30px;
@@ -128,7 +130,7 @@ body.public-mode{
 }
 
 #qrZone img{
-  width:140px;
+  width:150px;
   background:white;
   padding:10px;
   border-radius:12px;
@@ -141,14 +143,40 @@ body.public-mode{
 <div class="container">
 <h1 style="text-align:center;">🎯 Gestion file d’attente Premium</h1>
  
+<div id="bureauContainer"></div>
+ 
 <div style="text-align:center;margin-top:20px;">
 <button onclick="next()">Suivant (Comptoir)</button>
 <button class="absentBtn" onclick="markAbsent()">Absent</button>
 <button onclick="openPublic()">Écran public</button>
+<button onclick="toggleSound()" id="soundBtn">🔊 Son activé</button>
 </div>
-
-<h3>Historique</h3>
+ 
+<div style="text-align:center;margin-top:20px;">
+<select id="manualSource">
+<option value="Comptoir">Comptoir</option>
+<option value="Bureau 1">Bureau 1</option>
+<option value="Bureau 2">Bureau 2</option>
+<option value="Bureau 3">Bureau 3</option>
+<option value="Sous-sol">Sous-sol</option>
+</select>
+ 
+<select id="manualType">
+<option value="">-- Motif --</option>
+<option value="Saisie">Saisie</option>
+<option value="Finalisation">Finalisation</option>
+</select>
+ 
+<input type="number" id="manualNumber" placeholder="Numéro">
+<button onclick="manual()">Appeler</button>
+</div>
+ 
+<h3>Numéros absents</h3>
+<div id="absentList"></div>
+ 
+<h3>Historique (10 derniers)</h3>
 <div id="history"></div>
+ 
 </div>
  
 <script type="module">
@@ -156,15 +184,37 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
  
 const firebaseConfig = {
-  apiKey: "AIzaSy...",
+  apiKey: "AIzaSyAnaaDFSoR4TQeBT-GsePWh4NZ837zptcI",
   authDomain: "attente-a4b23.firebaseapp.com",
-  projectId: "attente-a4b23"
+  projectId: "attente-a4b23",
+  storageBucket: "attente-a4b23.firebasestorage.app",
+  messagingSenderId: "305708504065",
+  appId: "1:305708504065:web:10979176a13a4fb3829c00"
 };
  
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
  
-let current=0, history=[], lastCalls=[];
+const bureauNames = {1:"Bureau 1",2:"Bureau 2",3:"Bureau 3",4:"Sous-sol"};
+let current=0, history=[], absents=[], lastCalls=[], soundEnabled=true;
+ 
+function initBureaux(){
+  const container=document.getElementById("bureauContainer");
+  container.innerHTML="";
+  for(let i=1;i<=4;i++){
+    const div=document.createElement("div");
+    div.innerHTML=`<strong>${bureauNames[i]}</strong> 
+<button onclick="callBureau(${i})">Appeler</button>`;
+    container.appendChild(div);
+  }
+}
+ 
+function speakNumber(number, source){
+  if(!soundEnabled) return;
+  const msg=new SpeechSynthesisUtterance(`Numéro ${number}, veuillez vous présenter au ${source}`);
+  msg.lang="fr-FR";
+  speechSynthesis.speak(msg);
+}
  
 async function broadcastFirebase(number, source, status="servi"){
   lastCalls.unshift({number, source});
@@ -174,21 +224,26 @@ async function broadcastFirebase(number, source, status="servi"){
  
 window.next = async function(){
   current++;
-  history.push({number:current,source:"Comptoir"});
+  history.push({number:current,status:"servi",source:"Comptoir"});
   await broadcastFirebase(current,"Comptoir");
+  speakNumber(current,"Comptoir");
   updateHistory();
 }
  
 window.markAbsent = async function(){
   if(history.length===0) return;
   const last=history[history.length-1];
+  last.status="absent";
+  absents.push(last.number);
   await broadcastFirebase(last.number,last.source,"absent");
+  updateHistory();
 }
  
 window.openPublic = function(){
   window.open(location.origin + location.pathname + "?public=1","_blank");
 }
  
+/* ================= PUBLIC ================= */
 if(location.search.includes("public=1")){
   document.body.className="public-mode";
   document.body.innerHTML=`
@@ -235,21 +290,22 @@ if(location.search.includes("public=1")){
       document.getElementById("lastCalls").innerHTML=
         data.lastCalls.map(c=>`<div class="callItem">#${c.number} → ${c.source}</div>`).join("");
 
-      /* ✅ QR corrigé */
-      const baseUrl = location.origin + location.pathname;
-      const qrData = baseUrl + "?public=1&numero=" + data.number;
+      /* ✅ QR ouvre DIRECTEMENT l’écran public */
+      const publicUrl = location.origin + location.pathname + "?public=1";
 
       document.getElementById("qrCode").src =
-      "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(qrData);
+      "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" 
+      + encodeURIComponent(publicUrl);
     }
   });
 }
  
 function updateHistory(){
   document.getElementById("history").innerHTML=
-    history.map(h=>`<div>#${h.number} - ${h.source}</div>`).join("");
+    history.slice(-10).reverse().map(h=>`<div>#${h.number} - ${h.status} (${h.source})</div>`).join("");
 }
  
+initBureaux();
 updateHistory();
 </script>
 </body>
