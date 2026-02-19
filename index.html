@@ -77,7 +77,6 @@ body.public-mode{
 #publicNumber{
   font-size:18vw;
   text-shadow:0 0 40px cyan;
-  transition:0.3s;
 }
  
 #status{
@@ -107,7 +106,6 @@ body.public-mode{
   opacity:0.3;
 }
 
-/* ===== DATE ===== */
 #datetime{
   position:absolute;
   top:20px;
@@ -121,7 +119,6 @@ body.public-mode{
   opacity:0.7;
 }
 
-/* ===== QR CODE GAUCHE ===== */
 #qrZone{
   position:absolute;
   left:30px;
@@ -144,40 +141,14 @@ body.public-mode{
 <div class="container">
 <h1 style="text-align:center;">🎯 Gestion file d’attente Premium</h1>
  
-<div id="bureauContainer"></div>
- 
 <div style="text-align:center;margin-top:20px;">
 <button onclick="next()">Suivant (Comptoir)</button>
 <button class="absentBtn" onclick="markAbsent()">Absent</button>
 <button onclick="openPublic()">Écran public</button>
-<button onclick="toggleSound()" id="soundBtn">🔊 Son activé</button>
 </div>
- 
-<div style="text-align:center;margin-top:20px;">
-<select id="manualSource">
-<option value="Comptoir">Comptoir</option>
-<option value="Bureau 1">Bureau 1</option>
-<option value="Bureau 2">Bureau 2</option>
-<option value="Bureau 3">Bureau 3</option>
-<option value="Sous-sol">Sous-sol</option>
-</select>
- 
-<select id="manualType">
-<option value="">-- Motif --</option>
-<option value="Saisie">Saisie</option>
-<option value="Finalisation">Finalisation</option>
-</select>
- 
-<input type="number" id="manualNumber" placeholder="Numéro">
-<button onclick="manual()">Appeler</button>
-</div>
- 
-<h3>Numéros absents</h3>
-<div id="absentList"></div>
- 
-<h3>Historique (10 derniers)</h3>
+
+<h3>Historique</h3>
 <div id="history"></div>
- 
 </div>
  
 <script type="module">
@@ -185,37 +156,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
  
 const firebaseConfig = {
-  apiKey: "AIzaSyAnaaDFSoR4TQeBT-GsePWh4NZ837zptcI",
+  apiKey: "AIzaSy...",
   authDomain: "attente-a4b23.firebaseapp.com",
-  projectId: "attente-a4b23",
-  storageBucket: "attente-a4b23.firebasestorage.app",
-  messagingSenderId: "305708504065",
-  appId: "1:305708504065:web:10979176a13a4fb3829c00"
+  projectId: "attente-a4b23"
 };
  
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
  
-const bureauNames = {1:"Bureau 1",2:"Bureau 2",3:"Bureau 3",4:"Sous-sol"};
-let current=0, history=[], absents=[], lastCalls=[], soundEnabled=true;
- 
-function initBureaux(){
-  const container=document.getElementById("bureauContainer");
-  container.innerHTML="";
-  for(let i=1;i<=4;i++){
-    const div=document.createElement("div");
-    div.innerHTML=`<strong>${bureauNames[i]}</strong> 
-<button onclick="callBureau(${i})">Appeler</button>`;
-    container.appendChild(div);
-  }
-}
- 
-function speakNumber(number, source){
-  if(!soundEnabled) return;
-  const msg=new SpeechSynthesisUtterance(`Numéro ${number}, veuillez vous présenter au ${source}`);
-  msg.lang="fr-FR";
-  speechSynthesis.speak(msg);
-}
+let current=0, history=[], lastCalls=[];
  
 async function broadcastFirebase(number, source, status="servi"){
   lastCalls.unshift({number, source});
@@ -225,54 +174,21 @@ async function broadcastFirebase(number, source, status="servi"){
  
 window.next = async function(){
   current++;
-  history.push({number:current,status:"servi",source:"Comptoir"});
+  history.push({number:current,source:"Comptoir"});
   await broadcastFirebase(current,"Comptoir");
-  speakNumber(current,"Comptoir");
   updateHistory();
 }
  
 window.markAbsent = async function(){
   if(history.length===0) return;
   const last=history[history.length-1];
-  last.status="absent";
-  absents.push(last.number);
   await broadcastFirebase(last.number,last.source,"absent");
-  updateHistory();
-}
- 
-window.manual = async function(){
-  const n=parseInt(document.getElementById("manualNumber").value);
-  if(!n) return alert("Numéro invalide");
-  const source=document.getElementById("manualSource").value;
-  const type=document.getElementById("manualType").value;
-  const label= type?`${source} - ${type}`:source;
-  current=n;
-  history.push({number:n,status:"manuel",source:label});
-  await broadcastFirebase(n,label);
-  speakNumber(n,label);
-  document.getElementById("manualNumber").value="";
-  updateHistory();
-}
- 
-window.callBureau = async function(id){
-  current++;
-  const source=bureauNames[id];
-  history.push({number:current,status:"servi",source});
-  await broadcastFirebase(current,source);
-  speakNumber(current,source);
-  updateHistory();
-}
- 
-window.toggleSound = function(){
-  soundEnabled=!soundEnabled;
-  document.getElementById("soundBtn").textContent = soundEnabled?"🔊 Son activé":"🔇 Son désactivé";
 }
  
 window.openPublic = function(){
-  window.open(location.href+"?public=1","_blank");
+  window.open(location.origin + location.pathname + "?public=1","_blank");
 }
  
-/* ================= PUBLIC ================= */
 if(location.search.includes("public=1")){
   document.body.className="public-mode";
   document.body.innerHTML=`
@@ -284,7 +200,6 @@ if(location.search.includes("public=1")){
 </div>
 
 <div id="qrZone">
-  <div style="margin-bottom:8px;font-size:14px;">Scanner</div>
   <img id="qrCode">
 </div>
 
@@ -320,7 +235,10 @@ if(location.search.includes("public=1")){
       document.getElementById("lastCalls").innerHTML=
         data.lastCalls.map(c=>`<div class="callItem">#${c.number} → ${c.source}</div>`).join("");
 
-      const qrData = location.origin + location.pathname + "?numero=" + data.number;
+      /* ✅ QR corrigé */
+      const baseUrl = location.origin + location.pathname;
+      const qrData = baseUrl + "?public=1&numero=" + data.number;
+
       document.getElementById("qrCode").src =
       "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(qrData);
     }
@@ -329,20 +247,9 @@ if(location.search.includes("public=1")){
  
 function updateHistory(){
   document.getElementById("history").innerHTML=
-    history.slice(-10).reverse().map(h=>`<div>#${h.number} - ${h.status} (${h.source})</div>`).join("");
-  document.getElementById("absentList").innerHTML=
-    absents.map(n=>`<button class="recallBtn" onclick="recall(${n})">Rappeler #${n}</button>`).join("");
+    history.map(h=>`<div>#${h.number} - ${h.source}</div>`).join("");
 }
  
-window.recall = async function(n){
-  absents=absents.filter(x=>x!==n);
-  history.push({number:n,status:"rappel",source:"Comptoir"});
-  await broadcastFirebase(n,"Comptoir");
-  speakNumber(n,"Comptoir");
-  updateHistory();
-}
- 
-initBureaux();
 updateHistory();
 </script>
 </body>
