@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -61,6 +61,7 @@ body.public-mode{
   align-items:center;
   padding:40px 20px;
   box-sizing:border-box;
+  position:relative;
 }
  
 #title{ font-size:3vw; opacity:0.8; }
@@ -104,6 +105,36 @@ body.public-mode{
   bottom:10px;
   right:10px;
   opacity:0.3;
+}
+
+/* ===== DATE ===== */
+#datetime{
+  position:absolute;
+  top:20px;
+  right:30px;
+  text-align:right;
+  font-size:1.5vw;
+}
+
+#day{
+  font-size:1.2vw;
+  opacity:0.7;
+}
+
+/* ===== QR CODE GAUCHE ===== */
+#qrZone{
+  position:absolute;
+  left:30px;
+  top:50%;
+  transform:translateY(-50%);
+  text-align:center;
+}
+
+#qrZone img{
+  width:140px;
+  background:white;
+  padding:10px;
+  border-radius:12px;
 }
 </style>
 </head>
@@ -149,26 +180,22 @@ body.public-mode{
  
 </div>
  
-<!-- ================= FIREBASE ================= -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
  
-// 🔹 Ta config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAnaaDFSoR4TQeBT-GsePWh4NZ837zptcI",
   authDomain: "attente-a4b23.firebaseapp.com",
   projectId: "attente-a4b23",
   storageBucket: "attente-a4b23.firebasestorage.app",
   messagingSenderId: "305708504065",
-  appId: "1:305708504065:web:10979176a13a4fb3829c00",
-  measurementId: "G-QG0FXPWTG2"
+  appId: "1:305708504065:web:10979176a13a4fb3829c00"
 };
  
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
  
-// ================= LOGIQUE DE LA FILE =================
 const bureauNames = {1:"Bureau 1",2:"Bureau 2",3:"Bureau 3",4:"Sous-sol"};
 let current=0, history=[], absents=[], lastCalls=[], soundEnabled=true;
  
@@ -196,7 +223,6 @@ async function broadcastFirebase(number, source, status="servi"){
   await setDoc(doc(db,"queue","current"), {number, source, status, lastCalls});
 }
  
-// ================= ACTIONS =================
 window.next = async function(){
   current++;
   history.push({number:current,status:"servi",source:"Comptoir"});
@@ -246,33 +272,57 @@ window.openPublic = function(){
   window.open(location.href+"?public=1","_blank");
 }
  
-// ================= PUBLIC =================
+/* ================= PUBLIC ================= */
 if(location.search.includes("public=1")){
   document.body.className="public-mode";
   document.body.innerHTML=`
 <div id="pub">
+
+<div id="datetime">
+  <div id="clock"></div>
+  <div id="day"></div>
+</div>
+
+<div id="qrZone">
+  <div style="margin-bottom:8px;font-size:14px;">Scanner</div>
+  <img id="qrCode">
+</div>
+
 <div id="title">NUMÉRO EN COURS</div>
+
 <div id="centerZone">
 <div id="publicNumber">0</div>
 <div id="status"></div>
 </div>
+
 <div id="lastCalls"></div>
+
 <button id="fullscreenBtn" onclick="document.documentElement.requestFullscreen()">Plein écran</button>
 </div>`;
- 
+
+  function updateClock(){
+    const now=new Date();
+    document.getElementById("clock").textContent=
+      now.toLocaleTimeString('fr-FR');
+    document.getElementById("day").textContent=
+      now.toLocaleDateString('fr-FR',
+      {weekday:'long',year:'2-digit',month:'long',day:'numeric'});
+  }
+  setInterval(updateClock,1000);
+  updateClock();
+
   onSnapshot(doc(db,"queue","current"),(docSnap)=>{
     if(docSnap.exists()){
       const data=docSnap.data();
       document.getElementById("publicNumber").textContent=data.number;
-      if(data.status==="absent"){
-        document.getElementById("status").textContent="ABSENT";
-        document.getElementById("status").style.color="gray";
-      }else{
-        document.getElementById("status").textContent=data.source;
-        document.getElementById("status").style.color="white";
-      }
+      document.getElementById("status").textContent=data.source;
+
       document.getElementById("lastCalls").innerHTML=
         data.lastCalls.map(c=>`<div class="callItem">#${c.number} → ${c.source}</div>`).join("");
+
+      const qrData = location.origin + location.pathname + "?numero=" + data.number;
+      document.getElementById("qrCode").src =
+      "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(qrData);
     }
   });
 }
@@ -292,7 +342,6 @@ window.recall = async function(n){
   updateHistory();
 }
  
-// ================= INITIALISATION =================
 initBureaux();
 updateHistory();
 </script>
