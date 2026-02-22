@@ -62,6 +62,17 @@ body.public-mode{ background: linear-gradient(180deg, #00111f, #000000); overflo
 #day{ font-size:1.2vw; opacity:0.7;}
 #qrZone{ position:absolute; left:30px; top:50%; transform:translateY(-50%); text-align:center;}
 #qrZone img{ width:160px; background:white; padding:10px; border-radius:12px;}
+#enableAudioBtn{
+position:absolute;
+bottom:20px;
+left:20px;
+padding:10px 15px;
+border-radius:8px;
+border:none;
+background:#00c853;
+color:white;
+cursor:pointer;
+}
 </style>
 </head>
 
@@ -225,11 +236,25 @@ if(location.search.includes("public=1")){
     <div id="centerZone"><div id="publicNumber">0</div><div id="status"></div></div>
     <div id="lastCalls"></div>
     <button id="fullscreenBtn" onclick="document.documentElement.requestFullscreen()">Plein écran</button>
+    <button id="enableAudioBtn">🔊 Activer le son</button>
   </div>`;
 
   let lastSpoken=null;
+  let audioUnlocked=false;
+
+  document.addEventListener("click", ()=>{
+    if(!audioUnlocked){
+      const test=new SpeechSynthesisUtterance(" ");
+      speechSynthesis.speak(test);
+      speechSynthesis.cancel();
+      audioUnlocked=true;
+      const btn=document.getElementById("enableAudioBtn");
+      if(btn) btn.style.display="none";
+    }
+  });
 
   function speakPublic(number, source){
+    if(!audioUnlocked) return;
     if(number===lastSpoken) return;
     lastSpoken=number;
     const msg=new SpeechSynthesisUtterance(`Numéro ${number}, veuillez vous présenter au ${source}`);
