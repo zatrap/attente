@@ -15,6 +15,7 @@ button { padding:10px 18px; margin:5px; border:none; border-radius:8px; backgrou
 button:hover { transform:scale(1.05); background:#005ecb;}
 .absentBtn{ background:#ff4d4d; } .absentBtn:hover{ background:#cc0000; }
 .recallBtn{ background:#ffaa00; } .recallBtn:hover{ background:#cc8400; }
+.resetBtn{ background:#6c757d; } .resetBtn:hover{ background:#495057; }
 input[type=number], select{ padding:10px; border-radius:8px; border:2px solid #007aff; margin:5px; }
 
 /* PUBLIC SCREEN */
@@ -76,6 +77,7 @@ body.public-mode{ background: linear-gradient(180deg, #00111f, #000000); overflo
 <button class="absentBtn" onclick="markAbsent()">Absent</button>
 <button onclick="openPublic()">Écran public</button>
 <button onclick="toggleSound()" id="soundBtn">🔊 Son activé</button>
+<button class="resetBtn" onclick="resetAll()">🔄 Reset Historique</button>
 </div>
 
 <div style="text-align:center;margin-top:20px;">
@@ -114,6 +116,7 @@ const firebaseConfig = {
   authDomain: "attente-a4b23.firebaseapp.com",
   projectId: "attente-a4b23"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
@@ -135,6 +138,7 @@ function speakNumber(number, source){
   if(!soundEnabled) return;
   const msg=new SpeechSynthesisUtterance(`Numéro ${number}, veuillez vous présenter au ${source}`);
   msg.lang="fr-FR";
+  speechSynthesis.cancel();
   speechSynthesis.speak(msg);
 }
 
@@ -144,13 +148,23 @@ async function broadcastFirebase(number, source, status="servi"){
   await setDoc(doc(db,"queue","current"), {number, source, status, lastCalls});
 }
 
+window.resetAll = async function(){
+  if(!confirm("Confirmer la réinitialisation complète ?")) return;
+  current=0;
+  history=[];
+  absents=[];
+  lastCalls=[];
+  await setDoc(doc(db,"queue","current"), {number:0, source:"", status:"reset", lastCalls:[]});
+  updateHistory();
+};
+
 window.next = async function(){
   current++;
   history.push({number:current,status:"servi",source:"Comptoir"});
   await broadcastFirebase(current,"Comptoir","servi");
   speakNumber(current,"Comptoir");
   updateHistory();
-}
+};
 
 window.callBureau = async function(id){
   current++;
@@ -159,7 +173,7 @@ window.callBureau = async function(id){
   await broadcastFirebase(current,source,"servi");
   speakNumber(current,source);
   updateHistory();
-}
+};
 
 window.manual = async function(){
   const n=parseInt(document.getElementById("manualNumber").value);
@@ -173,7 +187,7 @@ window.manual = async function(){
   speakNumber(n,label);
   document.getElementById("manualNumber").value="";
   updateHistory();
-}
+};
 
 window.markAbsent = async function(){
   if(history.length===0) return;
@@ -182,7 +196,7 @@ window.markAbsent = async function(){
   if(!absents.includes(last.number)) absents.push(last.number);
   await broadcastFirebase(last.number,last.source,"absent");
   updateHistory();
-}
+};
 
 window.recall = async function(n){
   absents = absents.filter(x=>x!==n);
@@ -190,61 +204,42 @@ window.recall = async function(n){
   await broadcastFirebase(n,"Comptoir","servi");
   speakNumber(n,"Comptoir");
   updateHistory();
-}
+};
 
 window.toggleSound = function(){
   soundEnabled=!soundEnabled;
   document.getElementById("soundBtn").textContent = soundEnabled?"🔊 Son activé":"🔇 Son désactivé";
-}
+};
 
 window.openPublic = function(){
   window.open(location.origin + location.pathname + "?public=1","_blank");
-}
+};
 
 if(location.search.includes("public=1")){
   document.body.className="public-mode";
-  document.body.innerHTML=`
-  <div id="pub">
-    <div id="datetime"><div id="clock"></div><div id="day"></div></div>
-    <div id="qrZone"><img id="qrCode"></div>
+  document.body.innerHTML=`<div id="pub">
     <div id="title">NUMÉRO EN COURS</div>
     <div id="centerZone"><div id="publicNumber">0</div><div id="status"></div></div>
     <div id="lastCalls"></div>
-    <button id="fullscreenBtn" onclick="document.documentElement.requestFullscreen()">Plein écran</button>
   </div>`;
 
-  function updateClock(){
-    const now=new Date();
-    document.getElementById("clock").textContent=now.toLocaleTimeString('fr-FR');
-    document.getElementById("day").textContent=now.toLocaleDateString('fr-FR',{weekday:'long',year:'2-digit',month:'long',day:'numeric'});
+  let lastSpoken=null;
+
+  function speakPublic(number, source){
+    if(number===lastSpoken) return;
+    lastSpoken=number;
+    const msg=new SpeechSynthesisUtterance(`Numéro ${number}, veuillez vous présenter au ${source}`);
+    msg.lang="fr-FR";
+    speechSynthesis.cancel();
+    speechSynthesis.speak(msg);
   }
-  setInterval(updateClock,1000); updateClock();
 
   onSnapshot(doc(db,"queue","current"),(docSnap)=>{
     if(docSnap.exists()){
       const data = docSnap.data();
       document.getElementById("publicNumber").textContent = data.number;
-
-      if(data.status==="absent"){
-        document.getElementById("status").textContent="ABSENT";
-        document.getElementById("status").style.color="red";
-      } else {
-        document.getElementById("status").textContent=data.source;
-        document.getElementById("status").style.color="white";
-      }
-
-      document.getElementById("lastCalls").innerHTML =
-        data.lastCalls.map(c=>`
-          <div class="callItem ${c.status==="absent"?"absent":""}">
-            <div class="callNumber">#${c.number}</div>
-            <div class="callSource">${c.source}</div>
-            ${c.status==="absent" ? '<div class="absentBadge">ABSENT</div>' : ''}
-          </div>
-        `).join("");
-
-      const publicUrl = location.origin + location.pathname + "?public=1";
-      document.getElementById("qrCode").src =
-        "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(publicUrl);
+      document.getElementById("status").textContent = data.status==="absent"?"ABSENT":data.source;
+      if(data.status==="servi") speakPublic(data.number,data.source);
     }
   });
 }
