@@ -217,10 +217,14 @@ window.openPublic = function(){
 
 if(location.search.includes("public=1")){
   document.body.className="public-mode";
-  document.body.innerHTML=`<div id="pub">
+  document.body.innerHTML=`
+  <div id="pub">
+    <div id="datetime"><div id="clock"></div><div id="day"></div></div>
+    <div id="qrZone"><img id="qrCode"></div>
     <div id="title">NUMÉRO EN COURS</div>
     <div id="centerZone"><div id="publicNumber">0</div><div id="status"></div></div>
     <div id="lastCalls"></div>
+    <button id="fullscreenBtn" onclick="document.documentElement.requestFullscreen()">Plein écran</button>
   </div>`;
 
   let lastSpoken=null;
@@ -234,12 +238,41 @@ if(location.search.includes("public=1")){
     speechSynthesis.speak(msg);
   }
 
+  function updateClock(){
+    const now=new Date();
+    document.getElementById("clock").textContent=now.toLocaleTimeString('fr-FR');
+    document.getElementById("day").textContent=now.toLocaleDateString('fr-FR',{weekday:'long',year:'2-digit',month:'long',day:'numeric'});
+  }
+  setInterval(updateClock,1000); updateClock();
+
   onSnapshot(doc(db,"queue","current"),(docSnap)=>{
     if(docSnap.exists()){
       const data = docSnap.data();
       document.getElementById("publicNumber").textContent = data.number;
-      document.getElementById("status").textContent = data.status==="absent"?"ABSENT":data.source;
-      if(data.status==="servi") speakPublic(data.number,data.source);
+
+      if(data.status==="absent"){
+        document.getElementById("status").textContent="ABSENT";
+        document.getElementById("status").style.color="red";
+      } else {
+        document.getElementById("status").textContent=data.source;
+        document.getElementById("status").style.color="white";
+        if(data.status==="servi"){
+          speakPublic(data.number,data.source);
+        }
+      }
+
+      document.getElementById("lastCalls").innerHTML =
+        data.lastCalls.map(c=>`
+          <div class="callItem ${c.status==="absent"?"absent":""}">
+            <div class="callNumber">#${c.number}</div>
+            <div class="callSource">${c.source}</div>
+            ${c.status==="absent" ? '<div class="absentBadge">ABSENT</div>' : ''}
+          </div>
+        `).join("");
+
+      const publicUrl = location.origin + location.pathname + "?public=1";
+      document.getElementById("qrCode").src =
+        "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(publicUrl);
     }
   });
 }
