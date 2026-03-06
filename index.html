@@ -1,67 +1,115 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <title>Gestion file d’attente - Version Premium</title>
-
 <style>
 html, body { margin:0; padding:0; height:100%; font-family:'Segoe UI', sans-serif; }
-
 body.control-mode { background: linear-gradient(to bottom, #e0f0ff, #ffffff); padding:20px; }
-
 .container { max-width:950px; margin:auto; background:#ffffffee; padding:30px; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.2);}
-
 button { padding:10px 18px; margin:5px; border:none; border-radius:8px; background:#007aff; color:white; cursor:pointer; transition:0.2s;}
 button:hover { transform:scale(1.05); background:#005ecb;}
-.absentBtn{ background:#ff4d4d; } .absentBtn:hover{ background:#cc0000; }
-.recallBtn{ background:#ffaa00; } .recallBtn:hover{ background:#cc8400; }
-.resetBtn{ background:#6c757d; } .resetBtn:hover{ background:#495057; }
+.absentBtn{ background:#ff4d4d; }
+.absentBtn:hover{ background:#cc0000; }
+.recallBtn{ background:#ffaa00; }
+.recallBtn:hover{ background:#cc8400; }
+.resetBtn{ background:#6c757d; }
+.resetBtn:hover{ background:#495057; }
 input[type=number], select{ padding:10px; border-radius:8px; border:2px solid #007aff; margin:5px; }
-
+ 
 /* PUBLIC SCREEN */
-body.public-mode{ background: linear-gradient(180deg, #00111f, #000000); overflow:hidden; color:white; }
-#pub{ height:100vh; display:flex; flex-direction:column; justify-content:space-between; align-items:center; padding:40px 20px; box-sizing:border-box; position:relative;}
-#title{ font-size:3vw; opacity:0.8; }
-#centerZone{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;}
-#publicNumber{ font-size:18vw; text-shadow:0 0 40px cyan;}
-#status{ font-size:4vw; margin-top:10px;}
-#lastCalls{ 
-  display:flex; 
-  gap:25px; 
-  flex-wrap:wrap; 
-  justify-content:center; 
-  font-size:1.6vw;
-  border-top:1px solid rgba(255,255,255,0.2);
-  padding-top:20px;
+body.public-mode{
+background: linear-gradient(180deg, #00111f, #000000);
+overflow:hidden;
+color:white;
 }
-.callItem{ 
-  background:rgba(255,255,255,0.07); 
-  padding:12px 22px; 
-  border-radius:12px; 
-  min-width:240px;
-  border-left:6px solid cyan;
-  box-shadow:0 0 15px rgba(0,255,255,0.15);
+#pub{
+height:100vh;
+display:flex;
+flex-direction:column;
+justify-content:space-between;
+align-items:center;
+padding:40px 20px;
+box-sizing:border-box;
+position:relative;
+}
+#title{ font-size:3vw; opacity:0.8; }
+#centerZone{
+flex:1;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+}
+#publicNumber{
+font-size:18vw;
+text-shadow:0 0 40px cyan;
+}
+#status{
+font-size:4vw;
+margin-top:10px;
+}
+#lastCalls{
+display:flex;
+gap:25px;
+flex-wrap:wrap;
+justify-content:center;
+font-size:1.6vw;
+border-top:1px solid rgba(255,255,255,0.2);
+padding-top:20px;
+}
+.callItem{
+background:rgba(255,255,255,0.07);
+padding:12px 22px;
+border-radius:12px;
+min-width:240px;
+border-left:6px solid cyan;
+box-shadow:0 0 15px rgba(0,255,255,0.15);
 }
 .callItem.absent{
-  border-left:6px solid red;
-  background:rgba(255,0,0,0.15);
+border-left:6px solid red;
+background:rgba(255,0,0,0.15);
 }
 .callNumber{ font-weight:bold; font-size:1.3em; }
 .callSource{ opacity:0.8; font-size:0.9em; }
 .absentBadge{
-  display:inline-block;
-  margin-top:6px;
-  padding:3px 8px;
-  font-size:0.8em;
-  background:red;
-  border-radius:6px;
+display:inline-block;
+margin-top:6px;
+padding:3px 8px;
+font-size:0.8em;
+background:red;
+border-radius:6px;
 }
-
-#fullscreenBtn { position:absolute; bottom:10px; right:10px; opacity:0.3;}
-#datetime{ position:absolute; top:20px; right:30px; text-align:right; font-size:1.5vw;}
-#day{ font-size:1.2vw; opacity:0.7;}
-#qrZone{ position:absolute; left:30px; top:50%; transform:translateY(-50%); text-align:center;}
-#qrZone img{ width:160px; background:white; padding:10px; border-radius:12px;}
+#fullscreenBtn {
+position:absolute;
+bottom:10px;
+right:10px;
+opacity:0.3;
+}
+#datetime{
+position:absolute;
+top:20px;
+right:30px;
+text-align:right;
+font-size:1.5vw;
+}
+#day{
+font-size:1.2vw;
+opacity:0.7;
+}
+#qrZone{
+position:absolute;
+left:30px;
+top:50%;
+transform:translateY(-50%);
+text-align:center;
+}
+#qrZone img{
+width:160px;
+background:white;
+padding:10px;
+border-radius:12px;
+}
 #enableAudioBtn{
 position:absolute;
 bottom:20px;
@@ -73,16 +121,53 @@ background:#00c853;
 color:white;
 cursor:pointer;
 }
+ 
+/* MODAL MOT DE PASSE */
+#passwordModal{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:9999;
+}
+#passwordModalContent{
+background:white;
+padding:30px;
+border-radius:15px;
+text-align:center;
+}
+#pwdInput{
+padding:10px;
+border-radius:8px;
+border:2px solid #007aff;
+margin-top:10px;
+width:200px;
+}
 </style>
 </head>
-
+ 
 <body class="control-mode">
-
+ 
+<!-- MODAL MOT DE PASSE -->
+<div id="passwordModal">
+<div id="passwordModalContent">
+<h2>Mot de passe requis</h2>
+<input type="password" id="pwdInput" placeholder="Entrez le mot de passe">
+<br><br>
+<button onclick="checkPassword()">Valider</button>
+</div>
+</div>
+ 
 <div class="container">
 <h1 style="text-align:center;">🎯 Gestion file d’attente Premium</h1>
-
+ 
 <div id="bureauContainer"></div>
-
+ 
 <div style="text-align:center;margin-top:20px;">
 <button onclick="next()">Suivant (Comptoir)</button>
 <button class="absentBtn" onclick="markAbsent()">Absent</button>
@@ -90,7 +175,7 @@ cursor:pointer;
 <button onclick="toggleSound()" id="soundBtn">🔊 Son activé</button>
 <button class="resetBtn" onclick="resetAll()">🔄 Reset Historique</button>
 </div>
-
+ 
 <div style="text-align:center;margin-top:20px;">
 <select id="manualSource">
 <option value="Comptoir">Comptoir</option>
@@ -99,218 +184,270 @@ cursor:pointer;
 <option value="Bureau 3">Bureau 3</option>
 <option value="Sous-sol">Sous-sol</option>
 </select>
-
+ 
 <select id="manualType">
 <option value="">-- Motif --</option>
 <option value="Saisie">Saisie</option>
 <option value="Finalisation">Finalisation</option>
 </select>
-
+ 
 <input type="number" id="manualNumber" placeholder="Numéro">
 <button onclick="manual()">Appeler</button>
 </div>
-
+ 
 <h3>Numéros absents</h3>
 <div id="absentList"></div>
-
+ 
 <h3>Historique (10 derniers)</h3>
 <div id="history"></div>
-
 </div>
-
+ 
 <script type="module">
+ 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
+ 
 const firebaseConfig = {
-  apiKey: "AIzaSyAnaaDFSoR4TQeBT-GsePWh4NZ837zptcI",
-  authDomain: "attente-a4b23.firebaseapp.com",
-  projectId: "attente-a4b23"
+apiKey: "AIzaSyAnaaDFSoR4TQeBT-GsePWh4NZ837zptcI",
+authDomain: "attente-a4b23.firebaseapp.com",
+projectId: "attente-a4b23"
 };
-
+ 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
+ 
 const bureauNames = {1:"Bureau 1",2:"Bureau 2",3:"Bureau 3",4:"Sous-sol"};
+ 
 let current=0, history=[], absents=[], lastCalls=[], soundEnabled=true;
-
+ 
 function initBureaux(){
-  const container=document.getElementById("bureauContainer");
-  container.innerHTML="";
-  for(let i=1;i<=4;i++){
-    const div=document.createElement("div");
-    div.innerHTML=`<strong>${bureauNames[i]}</strong> 
-    <button onclick="callBureau(${i})">Appeler</button>`;
-    container.appendChild(div);
-  }
+const container=document.getElementById("bureauContainer");
+container.innerHTML="";
+for(let i=1;i<=4;i++){
+const div=document.createElement("div");
+div.innerHTML=`<strong>${bureauNames[i]}</strong> <button onclick="callBureau(${i})">Appeler</button>`;
+container.appendChild(div);
 }
-
+}
+ 
 function speakNumber(number, source){
-  if(!soundEnabled) return;
-  const msg=new SpeechSynthesisUtterance(`Numéro ${number}, veuillez vous présenter au ${source}`);
-  msg.lang="fr-FR";
-  speechSynthesis.cancel();
-  speechSynthesis.speak(msg);
+if(!soundEnabled) return;
+const msg=new SpeechSynthesisUtterance(`Numéro ${number}, veuillez vous présenter au ${source}`);
+msg.lang="fr-FR";
+speechSynthesis.cancel();
+speechSynthesis.speak(msg);
 }
-
+ 
 async function broadcastFirebase(number, source, status="servi"){
-  lastCalls.unshift({number, source, status});
-  if(lastCalls.length>4) lastCalls.pop();
-  await setDoc(doc(db,"queue","current"), {number, source, status, lastCalls});
+lastCalls.unshift({number, source, status});
+if(lastCalls.length>4) lastCalls.pop();
+await setDoc(doc(db,"queue","current"), {number, source, status, lastCalls});
 }
-
+ 
 window.resetAll = async function(){
-  if(!confirm("Confirmer la réinitialisation complète ?")) return;
-  current=0;
-  history=[];
-  absents=[];
-  lastCalls=[];
-  await setDoc(doc(db,"queue","current"), {number:0, source:"", status:"reset", lastCalls:[]});
-  updateHistory();
+if(!confirm("Confirmer la réinitialisation complète ?")) return;
+current=0;
+history=[];
+absents=[];
+lastCalls=[];
+await setDoc(doc(db,"queue","current"), {number:0, source:"", status:"reset", lastCalls:[]});
+updateHistory();
 };
-
+ 
 window.next = async function(){
-  current++;
-  history.push({number:current,status:"servi",source:"Comptoir"});
-  await broadcastFirebase(current,"Comptoir","servi");
-  speakNumber(current,"Comptoir");
-  updateHistory();
+current++;
+history.push({number:current,status:"servi",source:"Comptoir"});
+await broadcastFirebase(current,"Comptoir","servi");
+speakNumber(current,"Comptoir");
+updateHistory();
 };
-
+ 
 window.callBureau = async function(id){
-  current++;
-  const source=bureauNames[id];
-  history.push({number:current,status:"servi",source});
-  await broadcastFirebase(current,source,"servi");
-  speakNumber(current,source);
-  updateHistory();
+current++;
+const source=bureauNames[id];
+history.push({number:current,status:"servi",source});
+await broadcastFirebase(current,source,"servi");
+speakNumber(current,source);
+updateHistory();
 };
-
+ 
 window.manual = async function(){
-  const n=parseInt(document.getElementById("manualNumber").value);
-  if(!n) return alert("Numéro invalide");
-  const source=document.getElementById("manualSource").value;
-  const type=document.getElementById("manualType").value;
-  const label= type?`${source} - ${type}`:source;
-  current=n;
-  history.push({number:n,status:"manuel",source:label});
-  await broadcastFirebase(n,label,"servi");
-  speakNumber(n,label);
-  document.getElementById("manualNumber").value="";
-  updateHistory();
+const n=parseInt(document.getElementById("manualNumber").value);
+if(!n) return alert("Numéro invalide");
+const source=document.getElementById("manualSource").value;
+const type=document.getElementById("manualType").value;
+const label= type?`${source} - ${type}`:source;
+current=n;
+history.push({number:n,status:"manuel",source:label});
+await broadcastFirebase(n,label,"servi");
+speakNumber(n,label);
+document.getElementById("manualNumber").value="";
+updateHistory();
 };
-
+ 
 window.markAbsent = async function(){
-  if(history.length===0) return;
-  const last = history[history.length-1];
-  last.status="absent";
-  if(!absents.includes(last.number)) absents.push(last.number);
-  await broadcastFirebase(last.number,last.source,"absent");
-  updateHistory();
+if(history.length===0) return;
+const last = history[history.length-1];
+last.status="absent";
+if(!absents.includes(last.number)) absents.push(last.number);
+await broadcastFirebase(last.number,last.source,"absent");
+updateHistory();
 };
-
+ 
 window.recall = async function(n){
-  absents = absents.filter(x=>x!==n);
-  history.push({number:n,status:"rappel",source:"Comptoir"});
-  await broadcastFirebase(n,"Comptoir","servi");
-  speakNumber(n,"Comptoir");
-  updateHistory();
+absents = absents.filter(x=>x!==n);
+history.push({number:n,status:"rappel",source:"Comptoir"});
+await broadcastFirebase(n,"Comptoir","servi");
+speakNumber(n,"Comptoir");
+updateHistory();
 };
-
+ 
 window.toggleSound = function(){
-  soundEnabled=!soundEnabled;
-  document.getElementById("soundBtn").textContent = soundEnabled?"🔊 Son activé":"🔇 Son désactivé";
+soundEnabled=!soundEnabled;
+document.getElementById("soundBtn").textContent =
+soundEnabled?"🔊 Son activé":"🔇 Son désactivé";
 };
-
+ 
 window.openPublic = function(){
-  window.open(location.origin + location.pathname + "?public=1","_blank");
+window.open(location.origin + location.pathname + "?public=1","_blank");
 };
-
+ 
+/* --- SECURITE MOT DE PASSE --- */
+if(!location.search.includes("public=1")){
+  // On affiche le modal
+  document.getElementById("passwordModal").style.display="flex";
+}
+ 
+// Fonction globale pour bouton Valider
+window.checkPassword = function(){
+  const PASSWORD = "impot20@1234";
+  const input = document.getElementById("pwdInput").value;
+  if(input === PASSWORD){
+    document.getElementById("passwordModal").style.display = "none";
+  } else {
+    alert("Mot de passe incorrect !");
+    document.getElementById("pwdInput").value="";
+  }
+};
+ 
+/* --- PUBLIC SCREEN --- */
 if(location.search.includes("public=1")){
-  document.body.className="public-mode";
-  document.body.innerHTML=`
-  <div id="pub">
-    <div id="datetime"><div id="clock"></div><div id="day"></div></div>
-    <div id="qrZone"><img id="qrCode"></div>
-    <div id="title">NUMÉRO EN COURS</div>
-    <div id="centerZone"><div id="publicNumber">0</div><div id="status"></div></div>
-    <div id="lastCalls"></div>
-    <button id="fullscreenBtn" onclick="document.documentElement.requestFullscreen()">Plein écran</button>
-    <button id="enableAudioBtn">🔊 Activer le son</button>
-  </div>`;
-
-  let lastSpoken=null;
-  let audioUnlocked=false;
-
-  document.addEventListener("click", ()=>{
-    if(!audioUnlocked){
-      const test=new SpeechSynthesisUtterance(" ");
-      speechSynthesis.speak(test);
-      speechSynthesis.cancel();
-      audioUnlocked=true;
-      const btn=document.getElementById("enableAudioBtn");
-      if(btn) btn.style.display="none";
-    }
-  });
-
-  function speakPublic(number, source){
-    if(!audioUnlocked) return;
-    if(number===lastSpoken) return;
-    lastSpoken=number;
-    const msg=new SpeechSynthesisUtterance(`Numéro ${number}, veuillez vous présenter au ${source}`);
-    msg.lang="fr-FR";
-    speechSynthesis.cancel();
-    speechSynthesis.speak(msg);
-  }
-
-  function updateClock(){
-    const now=new Date();
-    document.getElementById("clock").textContent=now.toLocaleTimeString('fr-FR');
-    document.getElementById("day").textContent=now.toLocaleDateString('fr-FR',{weekday:'long',year:'2-digit',month:'long',day:'numeric'});
-  }
-  setInterval(updateClock,1000); updateClock();
-
-  onSnapshot(doc(db,"queue","current"),(docSnap)=>{
-    if(docSnap.exists()){
-      const data = docSnap.data();
-      document.getElementById("publicNumber").textContent = data.number;
-
-      if(data.status==="absent"){
-        document.getElementById("status").textContent="ABSENT";
-        document.getElementById("status").style.color="red";
-      } else {
-        document.getElementById("status").textContent=data.source;
-        document.getElementById("status").style.color="white";
-        if(data.status==="servi"){
-          speakPublic(data.number,data.source);
-        }
-      }
-
-      document.getElementById("lastCalls").innerHTML =
-        data.lastCalls.map(c=>`
-          <div class="callItem ${c.status==="absent"?"absent":""}">
-            <div class="callNumber">#${c.number}</div>
-            <div class="callSource">${c.source}</div>
-            ${c.status==="absent" ? '<div class="absentBadge">ABSENT</div>' : ''}
-          </div>
-        `).join("");
-
-      const publicUrl = location.origin + location.pathname + "?public=1";
-      document.getElementById("qrCode").src =
-        "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(publicUrl);
-    }
-  });
+ 
+document.body.className="public-mode";
+ 
+document.body.innerHTML=`
+<div id="pub">
+ 
+<div id="datetime">
+<div id="clock"></div>
+<div id="day"></div>
+</div>
+ 
+<div id="qrZone">
+<img id="qrCode">
+</div>
+ 
+<div id="title">NUMÉRO EN COURS</div>
+ 
+<div id="centerZone">
+<div id="publicNumber">0</div>
+<div id="status"></div>
+</div>
+ 
+<div id="lastCalls"></div>
+ 
+<button id="fullscreenBtn"
+onclick="document.documentElement.requestFullscreen()">
+Plein écran
+</button>
+ 
+<button id="enableAudioBtn">🔊 Activer le son</button>
+ 
+</div>
+`;
+ 
+let lastSpoken=null;
+let audioUnlocked=false;
+ 
+document.addEventListener("click", ()=>{
+if(!audioUnlocked){
+const test=new SpeechSynthesisUtterance(" ");
+speechSynthesis.speak(test);
+speechSynthesis.cancel();
+audioUnlocked=true;
+const btn=document.getElementById("enableAudioBtn");
+if(btn) btn.style.display="none";
 }
-
+});
+ 
+function speakPublic(number, source){
+if(!audioUnlocked) return;
+if(number===lastSpoken) return;
+lastSpoken=number;
+const msg=new SpeechSynthesisUtterance(`Numéro ${number}, veuillez vous présenter au ${source}`);
+msg.lang="fr-FR";
+speechSynthesis.cancel();
+speechSynthesis.speak(msg);
+}
+ 
+function updateClock(){
+const now=new Date();
+document.getElementById("clock").textContent=now.toLocaleTimeString('fr-FR');
+document.getElementById("day").textContent=
+now.toLocaleDateString('fr-FR',{weekday:'long',year:'2-digit',month:'long',day:'numeric'});
+}
+setInterval(updateClock,1000);
+updateClock();
+ 
+onSnapshot(doc(db,"queue","current"),(docSnap)=>{
+if(docSnap.exists()){
+const data = docSnap.data();
+document.getElementById("publicNumber").textContent = data.number;
+ 
+if(data.status==="absent"){
+document.getElementById("status").textContent="ABSENT";
+document.getElementById("status").style.color="red";
+} else {
+document.getElementById("status").textContent=data.source;
+document.getElementById("status").style.color="white";
+if(data.status==="servi"){
+speakPublic(data.number,data.source);
+}
+}
+ 
+document.getElementById("lastCalls").innerHTML =
+data.lastCalls.map(c=>`
+<div class="callItem ${c.status==="absent"?"absent":""}">
+<div class="callNumber">#${c.number}</div>
+<div class="callSource">${c.source}</div>
+${c.status==="absent" ? '<div class="absentBadge">ABSENT</div>' : ''}
+</div>
+`).join("");
+ 
+const publicUrl = location.origin + location.pathname + "?public=1";
+document.getElementById("qrCode").src =
+"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
+encodeURIComponent(publicUrl);
+}
+});
+ 
+}
+ 
 function updateHistory(){
-  document.getElementById("history").innerHTML=
-    history.slice(-10).reverse().map(h=>`<div>#${h.number} - ${h.status} (${h.source})</div>`).join("");
-  document.getElementById("absentList").innerHTML=
-    absents.map(n=>`<button class="recallBtn" onclick="recall(${n})">Rappeler #${n}</button>`).join("");
+document.getElementById("history").innerHTML=
+history.slice(-10).reverse().map(h=>
+`<div>#${h.number} - ${h.status} (${h.source})</div>`
+).join("");
+ 
+document.getElementById("absentList").innerHTML=
+absents.map(n=>
+`<button class="recallBtn" onclick="recall(${n})">Rappeler #${n}</button>`
+).join("");
 }
-
+ 
 initBureaux();
 updateHistory();
+ 
 </script>
 </body>
 </html>
